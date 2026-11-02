@@ -1,0 +1,127 @@
+# Orbit Intelligent Assistant
+
+A conversational assistant with a two-model routing/generation design, remote Gemini embeddings, persistent ChromaDB retrieval, source-grounded business answers, and SQLite conversation history.
+
+## Requirements
+
+- Python 3.11 or newer (the build workspace used Python 3.13.5).
+- An API key and model identifier for each of the two LLM roles.
+- A Google AI Studio API key for the Gemini Embedding API (`GEMINI_API_KEY`).
+- Internet access to call the remote embedding API; document text used for retrieval is sent to Google for embedding. Review your data-handling requirements before indexing confidential material.
+
+## Setup
+
+From this project directory:
+
+```bash
+python -m venv .venv
+```
+
+Activate it:
+
+- macOS/Linux: `source .venv/bin/activate`
+- Windows PowerShell: `.venv\Scripts\Activate.ps1`
+
+Install the pinned dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Create the environment file without overwriting an existing one:
+
+```bash
+# macOS/Linux
+cp -n .env.example .env
+
+# Windows PowerShell
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Edit `.env` and configure both roles:
+
+```dotenv
+ROUTER_MODEL=openai/gpt-4o-mini
+ROUTER_API_KEY=your_router_provider_key
+ROUTER_API_BASE=
+
+ANSWER_MODEL=openai/gpt-4.1
+ANSWER_API_KEY=your_answer_provider_key
+ANSWER_API_BASE=
+
+GEMINI_API_KEY=your_google_ai_studio_key
+EMBEDDING_MODEL=gemini-embedding-001
+EMBEDDING_OUTPUT_DIMENSIONALITY=768
+EMBEDDING_BATCH_SIZE=16
+```
+
+The model names above are examples; choose valid LiteLLM model identifiers for your provider. The API base URL is optional. For OpenAI-compatible providers, use the provider's documented base URL and model name. Never commit `.env` or share API keys. Generate the Gemini key in Google AI Studio and add it to your local `.env` or the Render service's Environment settings.
+
+## Add knowledge
+
+Put organizational/business documents under `knowledge/`. Supported extensions:
+
+- `.txt`, `.md`
+- `.pdf` (page numbers are retained when text extraction supports them)
+- `.docx`
+- `.csv`
+- `.json`
+
+Subdirectories are supported. Files are hashed; unchanged files are skipped, changed files are re-indexed, and deleted files are removed from the vector collection. The built-in `knowledge/README.md` is ignored. No demo company facts are included.
+
+## Start
+
+```bash
+python start.py
+```
+
+Open **http://127.0.0.1:8000**. The app binds to localhost by default. It creates `data/assistant.db` and persistent Chroma files under `data/chroma/`. Do not expose this prototype publicly without authentication and a security review.
+
+The app may display the setup interface when provider credentials are missing, but `/ready` will remain not-ready. The remote Gemini API client is initialized on startup; no Sentence Transformers or PyTorch model is downloaded or loaded locally. The first knowledge indexing operation and each retrieval query call the Gemini Embedding API.
+
+## Knowledge management
+
+- Check `GET /api/knowledge/status` for file and chunk counts.
+- Trigger incremental indexing with `POST /api/knowledge/reindex` and body `{"full": false}`.
+- Trigger a full rebuild with `POST /api/knowledge/reindex` and body `{"full": true}`.
+- The sidebar also includes an incremental **Reindex knowledge** action.
+
+## Verification
+
+Run all offline checks:
+
+```bash
+python scripts/verify.py
+```
+
+Run live tests using the actual `.env` credentials and a temporary isolated knowledge store:
+
+```bash
+python scripts/verify_live.py
+```
+
+Live tests call both configured LLM providers and the Gemini Embedding API, then exercise general, business, mixed, follow-up, clarification, and grounding paths. They use an isolated temporary Chroma collection and never write to the actual project knowledge collection. If credentials are not configured, the live report will be marked `SKIP` rather than passed.
+
+## API endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/health` | Process health |
+| GET | `/ready` | Required component/configuration readiness |
+| POST | `/api/chat` | Send a chat message |
+| GET | `/api/conversations` | List saved sessions |
+| POST | `/api/conversations` | Create a session |
+| GET | `/api/conversations/{session_id}` | Read session messages |
+| GET | `/api/knowledge/status` | Knowledge-base status |
+| POST | `/api/knowledge/reindex` | Incremental/full reindex |
+
+## Notes and limitations
+
+- Exactly two model configurations are used: the router model and the answer model. The answer model performs evidence assessment, answer generation, and grounding verification.
+- The default `gemini-embedding-001` model generates 768-dimensional retrieval vectors using `RETRIEVAL_DOCUMENT` and `RETRIEVAL_QUERY` task types. Both indexing and query embedding calls require Gemini API access and may be subject to rate limits or charges.
+- The default Chroma collection is versioned for Gemini embeddings. Existing vectors generated by a different embedding model must be re-indexed; the app uses a separate collection name to avoid mixing incompatible vector spaces.
+- PDF extraction is text-based; image-only/scanned PDFs require OCR and are not indexed in this prototype.
+- Chroma and conversation storage are local persistent stores. On Render Free, the filesystem is ephemeral, so Chroma indexes and SQLite conversation history may be lost on restart or redeploy. A persistent disk or external database/vector store is needed for durable production data. This prototype does not implement authentication, multi-tenant isolation, user management, or remote deployment hardening.
+- Router and verifier outputs are probabilistic. Grounding checks reduce risk but do not mathematically guarantee correctness; validate important facts against the cited source documents.
+- The router uses a narrow deterministic greeting/clarification fast path. All other intent classification uses LLM 1, with conservative behavior when the router is unavailable.

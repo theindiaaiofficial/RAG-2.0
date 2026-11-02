@@ -1,0 +1,13 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+data/*
+!data/.gitkeep
+knowledge/*
+!knowledge/README.md
+.DS_Store

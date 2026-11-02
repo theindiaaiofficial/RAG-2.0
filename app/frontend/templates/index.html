@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Orbit Assistant</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">O</div><div><strong>Orbit</strong><span>Intelligent Assistant</span></div></div>
+      <button class="new-chat" id="new-chat">＋ <span>New conversation</span></button>
+      <div class="side-heading">RECENT CONVERSATIONS</div>
+      <div class="conversation-list" id="conversation-list"></div>
+      <div class="sidebar-bottom">
+        <div class="knowledge-card">
+          <div class="knowledge-heading"><span class="status-dot" id="knowledge-dot"></span><strong>Knowledge base</strong></div>
+          <p id="knowledge-summary">Checking local files…</p>
+          <button class="text-button" id="reindex-button">↻ Reindex knowledge</button>
+        </div>
+        <div class="privacy-note">Local prototype · Data stays in this project folder</div>
+      </div>
+    </aside>
+    <main class="main-panel">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Toggle sidebar">☰</button>
+        <div><span class="topbar-title">Workspace</span><span class="topbar-subtitle" id="session-label">New conversation</span></div>
+        <div class="topbar-status"><span class="status-dot" id="ready-dot"></span><span id="ready-label">Checking readiness</span></div>
+      </header>
+      <section class="chat-scroll" id="chat-scroll">
+        <div class="welcome" id="welcome">
+          <div class="welcome-orbit">✦</div>
+          <p class="eyebrow">YOUR BUSINESS KNOWLEDGE, IN CONVERSATION</p>
+          <h1>How can I help<br><em>you today?</em></h1>
+          <p class="welcome-copy">Ask a general question or explore the information in your local knowledge base.</p>
+          <div class="suggestions">
+            <button class="suggestion" data-prompt="What can you help me with?"> <span>✧</span><div><strong>Explore capabilities</strong><small>What can I ask you?</small></div></button>
+            <button class="suggestion" data-prompt="Summarize the business services in the knowledge base."><span>▤</span><div><strong>Business knowledge</strong><small>Find services and key details</small></div></button>
+            <button class="suggestion" data-prompt="Explain RAG in simple terms."><span>⌘</span><div><strong>General question</strong><small>Get a clear explanation</small></div></button>
+          </div>
+        </div>
+        <div class="messages" id="messages" aria-live="polite"></div>
+      </section>
+      <footer class="composer-wrap">
+        <form class="composer" id="chat-form">
+          <textarea id="message-input" rows="1" placeholder="Message Orbit…" aria-label="Message Orbit"></textarea>
+          <button type="submit" id="send-button" aria-label="Send message">↑</button>
+        </form>
+        <p class="composer-hint">Orbit can make mistakes. Verify important business details against source documents.</p>
+      </footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
